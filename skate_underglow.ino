@@ -54,13 +54,13 @@ int loopCount = 0;
  *  and increase the counter to write at the next bin next time. Reset bin 
  *  count if over the max. Add to the pulse count
  */
-void saveMicrosToBuffer(){
+void saveMicrosToBuffer(){ //TODO if timestamps not initialized problem on timestamp[0]?
   timestampBuffer.currentDirection = digitalRead(pinHallDirection);
-  timestampBuffer.timestamps[timestampBuffer.currentBin] = micros();
   timestampBuffer.currentBin++;
   if (timestampBuffer.currentBin >= timestampBuffer.buffSize){
     timestampBuffer.currentBin = 0;
   }
+  timestampBuffer.timestamps[timestampBuffer.currentBin] = micros();
   timestampBuffer.pulseCount++;
 }
 

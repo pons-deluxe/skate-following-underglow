@@ -3,7 +3,7 @@
 
 typedef struct TimestampBuffer_S {
     volatile unsigned int * timestamps;
-    volatile unsigned char currentBin;
+    volatile char currentBin;  // The last bin we wrote a timestamp for.
     volatile char currentDirection;  // 0=Forwards, 1=Backwards (TODO verify this is the case)
     unsigned char buffSize;
     volatile unsigned int pulseCount;
@@ -12,7 +12,7 @@ typedef struct TimestampBuffer_S {
 // A copy of the timestamp buffer that won't be affected by interrupts
 typedef struct TimestampBufferCopy_S {
     unsigned int * timestamps;
-    unsigned char currentBin;
+    char currentBin;
     char currentDirection;  // 0=Forwards, 1=Backwards (TODO verify this is the case)
     unsigned char buffSize;
     unsigned int pulseCount;
