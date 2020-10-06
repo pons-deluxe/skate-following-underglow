@@ -1,6 +1,9 @@
 /*
 put lights under board and light em up according to wheel speed
 
+TODO configure unused digital pins to OUTPUT to save power
+
+FastLED.setBrightness TO 200 (of 255) MAXIMUM, ON ALL WHITE THIS USES 2A FOR 76 LEDS
 
 uint8_t is unsigned char;
 int8_t is signed char;
@@ -11,22 +14,30 @@ int32_t is int
 
 */
 #define DEBUG 1
+#define MAX_BRIGHTNESS 200  // At 77 LEDs full white this pulls 2A, max is 2.1A
+                            // Change brightness with ledBrightness below, not this define
 
 
 #include <WS2812Serial.h>
+#define USE_WS2812SERIAL
+#include <FastLED.h>
 #include "SpeedCalculation.h"
 
 
-//const unsigned short numled = 179;
-//const unsigned char pinToLeds = 24;   // Usable pins(Teensy LC):   1, 4, 5, 24. The chosen pin must be physically 
+const unsigned short numled = 77;
+const unsigned char ledBrightness = 200;  // Value 0-255
+const unsigned char pinToLeds = 24;   // Usable pins(Teensy LC):   1, 4, 5, 24. The chosen pin must be physically 
                                       // connected to pin 17 with a jumper cable to use the 5V buffer. Pin "17-5V"
                                       // can then be connected to the DATA pin on the LED strip
+
+const float patternLength = 1000.0;  // Length in mm before the led pattern repeats
+
 
 const unsigned char pinHallSpeed = 14;       // Connects to pin 2 of TLE4966, will be used as interrupt
 const unsigned char pinHallDirection = 15;   // Connects to pin 3 of TLE4966
 
 const unsigned char timestampsSaveNb = 12;  // max 255
-const unsigned int ledUpdateDelay = 50000;  // in microseconds
+const unsigned int ledUpdateDelay = 10000;  // in microseconds
 const float ledSpacingMM = 16.1;            // Space between each LED on LED strip
 const float wheelDiameterMM = 50.8;         // wheel diameter in mm
 const unsigned char pulsesPerRotation = 6;  //how many pulses we expect the hall effect sensor to give
@@ -43,8 +54,10 @@ elapsedMicros sinceLastFrame;
 
 //WS2812Serial leds(numled, displayMemory, drawingMemory, pinToLeds, WS2812_GRB);
 
-#if DEBUG
+// Define the array of leds
+CRGB leds[numled];
 
+#if DEBUG
 int loopCount = 0;
 #endif
 
@@ -82,6 +95,13 @@ void setup() {
   
 
   // LEDs 
+  LEDS.addLeds<WS2812SERIAL,pinToLeds,GRB>(leds,numled);
+  if (ledBrightness > MAX_BRIGHTNESS){
+    LEDS.setBrightness(MAX_BRIGHTNESS);
+  }
+  else{
+    LEDS.setBrightness(ledBrightness);
+  }
   //leds.begin();
 
 }
@@ -122,9 +142,12 @@ void loop() {
     
 
     //Calculate new colors positions 
-    float distance = distanceTravelled(timestampBufferCopy, ledUpdateDelay, wheelDiameterMM, pulsesPerRotation);
+    //float distance = distanceTravelled(timestampBufferCopy, ledUpdateDelay, wheelDiameterMM, pulsesPerRotation);
+    
 
     //Update the LEDs
+    //in fastLED, could be: leds[i].setHue( 160);
+    FastLED.show();
 
     //Reset the timer for next frame
     sinceLastFrame = 0;

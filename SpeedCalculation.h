@@ -1,6 +1,9 @@
 #ifndef _SPEEDCALCULATION_H
 #define _SPEEDCALCULATION_H
 
+#include <stdlib.h>
+#include <string.h>
+
 typedef struct TimestampBuffer_S {
     volatile unsigned int * timestamps;
     volatile char currentBin;  // The last bin we wrote a timestamp for.

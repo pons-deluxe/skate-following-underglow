@@ -1,7 +1,4 @@
 #include "SpeedCalculation.h"
-#include <stdlib.h>
-#include <string.h>
-
 
 
 void setupBuffer (TimestampBuffer * myBuffer, unsigned char numberOfBins){
