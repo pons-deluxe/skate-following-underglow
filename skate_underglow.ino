@@ -28,8 +28,8 @@ int32_t is int
 
 
 const uint16_t numled = 77;
-const uint8_t ledBrightness = 200;  // Value 0-255
-const uint8_t pinToLeds = 24;   // Usable pins(Teensy LC):   1, 4, 5, 24. The chosen pin must be physically 
+const uint8_t ledBrightness = 25;  // Value 0-255
+const uint8_t pinToLeds = 1;   // Usable pins(Teensy LC):   1, 4, 5, 24. The chosen pin must be physically 
                                       // connected to pin 17 with a jumper cable to use the 5V buffer. Pin "17-5V"
                                       // can then be connected to the DATA pin on the LED strip
 
@@ -38,8 +38,8 @@ const uint16_t boardTipLedNum = 15;  // The number of the LED at the tip of the 
 const bool doubleLedOnTip = true;  // 2 LEDs at front tip of board?
 
 
-const uint8_t pinHallSpeed = 14;       // Connects to pin 2 of TLE4966, will be used as interrupt
-const uint8_t pinHallDirection = 15;   // Connects to pin 3 of TLE4966
+const uint8_t pinHallSpeed = 15;       // Connects to pin 2 of TLE4966, will be used as interrupt
+const uint8_t pinHallDirection = 14;   // Connects to pin 3 of TLE4966
 
 const uint8_t timestampsSaveNb = 12;  // max 255
 const uint32_t ledUpdateDelay = 10000;  // in microseconds
@@ -60,8 +60,8 @@ elapsedMicros sinceLastFrame;
 int32_t distancePerPulseUnits =  (int32_t)(3.1416 * wheelDiameterMM / pulsesPerRotation * 10);  // Units are steps of 0.1 mm
 int32_t ledSpacingUnits = (int32_t)(ledSpacingMM * 10);
 //uint32_t patternLengthUnits = (uint32_t)(patternLengthMM * 10);
-uint32_t patternLengthLeds = (uint32_t)(ledSpacingMM / ledSpacingMM);
-uint32_t leadingPos = 0;  // Position of the leading LED in the pattern, 0 to (patternLengthLeds - 1)
+uint32_t patternLengthLeds = (uint32_t)(patternLengthMM / ledSpacingMM);
+int32_t leadingPos = 0;  // Position of the leading LED in the pattern, 0 to (patternLengthLeds - 1)
 
 //byte drawingMemory[numled*3];         //  3 bytes per LED
 //DMAMEM byte displayMemory[numled*12]; // 12 bytes per LED
@@ -100,6 +100,10 @@ void setup() {
 
 #if DEBUG
   Serial.begin(9600);  // USB, speed that is entered here doesn't matter, will always be USB speed
+  Serial.print("dir ");
+  Serial.print(20, DEC);
+  Serial.print(" speed ");
+  Serial.println(22, DEC);
 #endif
 
   // Attach interrupt
@@ -109,6 +113,8 @@ void setup() {
   
 
   // LEDs 
+  pinMode(pinToLeds, OUTPUT);
+  pinMode(17, INPUT);
   LEDS.addLeds<WS2812SERIAL,pinToLeds,GRB>(leds,numled);
   if (ledBrightness > MAX_BRIGHTNESS){
     LEDS.setBrightness(MAX_BRIGHTNESS);
@@ -145,10 +151,12 @@ void loop() {
     Serial.println(timestampBuffer.timestamps[timestampBuffer.currentBin], DEC);
     */
     
+    /*
     Serial.print("dir ");
     Serial.print(digitalRead(pinHallDirection), DEC);
     Serial.print(" speed ");
-    Serial.println(digitalRead(pinHallSpeed) + 2, DEC);
+    Serial.print(digitalRead(pinHallSpeed) + 2, DEC);
+    */
 
     loopCount++;
 #endif
@@ -159,6 +167,11 @@ void loop() {
     int32_t distance = distanceTravelledUnits(timestampBufferCopy, ledUpdateDelay, distancePerPulseUnits);
     int32_t pixelShift = distanceToPixCount(distance, ledSpacingUnits);
     leadingPos += pixelShift;
+    leadingPos = (leadingPos < 0)? (leadingPos + patternLengthLeds) : leadingPos;
+#if DEBUG
+    Serial.print(" leadingPos ");
+    Serial.println(leadingPos, DEC);
+#endif
 
     //Update the LEDs
     rainbowPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
