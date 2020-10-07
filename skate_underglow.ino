@@ -21,33 +21,47 @@ int32_t is int
 #include <WS2812Serial.h>
 #define USE_WS2812SERIAL
 #include <FastLED.h>
+#include <stdint.h>
 #include "SpeedCalculation.h"
+#include "LedPatterns.h"
 
 
-const unsigned short numled = 77;
-const unsigned char ledBrightness = 200;  // Value 0-255
-const unsigned char pinToLeds = 24;   // Usable pins(Teensy LC):   1, 4, 5, 24. The chosen pin must be physically 
+
+const uint16_t numled = 77;
+const uint8_t ledBrightness = 200;  // Value 0-255
+const uint8_t pinToLeds = 24;   // Usable pins(Teensy LC):   1, 4, 5, 24. The chosen pin must be physically 
                                       // connected to pin 17 with a jumper cable to use the 5V buffer. Pin "17-5V"
                                       // can then be connected to the DATA pin on the LED strip
 
-const float patternLength = 1000.0;  // Length in mm before the led pattern repeats
+const float patternLengthMM = 1000.0;  // Length in mm before the led pattern repeats
+const uint16_t boardTipLedNum = 15;  // The number of the LED at the tip of the board
+const bool doubleLedOnTip = true;  // 2 LEDs at front tip of board?
 
 
-const unsigned char pinHallSpeed = 14;       // Connects to pin 2 of TLE4966, will be used as interrupt
-const unsigned char pinHallDirection = 15;   // Connects to pin 3 of TLE4966
+const uint8_t pinHallSpeed = 14;       // Connects to pin 2 of TLE4966, will be used as interrupt
+const uint8_t pinHallDirection = 15;   // Connects to pin 3 of TLE4966
 
-const unsigned char timestampsSaveNb = 12;  // max 255
-const unsigned int ledUpdateDelay = 10000;  // in microseconds
+const uint8_t timestampsSaveNb = 12;  // max 255
+const uint32_t ledUpdateDelay = 10000;  // in microseconds
 const float ledSpacingMM = 16.1;            // Space between each LED on LED strip
 const float wheelDiameterMM = 50.8;         // wheel diameter in mm
-const unsigned char pulsesPerRotation = 6;  //how many pulses we expect the hall effect sensor to give
+const uint8_t pulsesPerRotation = 6;  //how many pulses we expect the hall effect sensor to give
                                             // after one wheel rotation
 
 
+                                            
+                                            
 TimestampBuffer     timestampBuffer;  // has volatile elements, keeps the result of micros() each time we get a pulse
 TimestampBufferCopy timestampBufferCopy; // copy of timestampBuffer that is unaffected by interrupts
 elapsedMicros sinceLastFrame;
 
+//float distancePerPulse = 3.1416 * wheelDiameterMM / pulsesPerRotation;
+// Work with units of 0.1 mm and keep everything int instead of float.
+int32_t distancePerPulseUnits =  (int32_t)(3.1416 * wheelDiameterMM / pulsesPerRotation * 10);  // Units are steps of 0.1 mm
+int32_t ledSpacingUnits = (int32_t)(ledSpacingMM * 10);
+//uint32_t patternLengthUnits = (uint32_t)(patternLengthMM * 10);
+uint32_t patternLengthLeds = (uint32_t)(ledSpacingMM / ledSpacingMM);
+uint32_t leadingPos = 0;  // Position of the leading LED in the pattern, 0 to (patternLengthLeds - 1)
 
 //byte drawingMemory[numled*3];         //  3 bytes per LED
 //DMAMEM byte displayMemory[numled*12]; // 12 bytes per LED
@@ -58,7 +72,7 @@ elapsedMicros sinceLastFrame;
 CRGB leds[numled];
 
 #if DEBUG
-int loopCount = 0;
+int32_t loopCount = 0;
 #endif
 
 
@@ -142,11 +156,12 @@ void loop() {
     
 
     //Calculate new colors positions 
-    //float distance = distanceTravelled(timestampBufferCopy, ledUpdateDelay, wheelDiameterMM, pulsesPerRotation);
-    
+    int32_t distance = distanceTravelledUnits(timestampBufferCopy, ledUpdateDelay, distancePerPulseUnits);
+    int32_t pixelShift = distanceToPixCount(distance, ledSpacingUnits);
+    leadingPos += pixelShift;
 
     //Update the LEDs
-    //in fastLED, could be: leds[i].setHue( 160);
+    rainbowPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
     FastLED.show();
 
     //Reset the timer for next frame

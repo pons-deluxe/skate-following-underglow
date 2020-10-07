@@ -3,36 +3,44 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 typedef struct TimestampBuffer_S {
-    volatile unsigned int * timestamps;
-    volatile char currentBin;  // The last bin we wrote a timestamp for.
+    volatile uint32_t * timestamps;
+    volatile char currentBin;  // The last bin we wrote a timestamp for. TODO char should be int8_t
     volatile char currentDirection;  // 0=Forwards, 1=Backwards (TODO verify this is the case)
-    unsigned char buffSize;
-    volatile unsigned int pulseCount;
+    uint8_t buffSize;
+    volatile uint32_t pulseCount;
 } TimestampBuffer;
 
 // A copy of the timestamp buffer that won't be affected by interrupts
 typedef struct TimestampBufferCopy_S {
-    unsigned int * timestamps;
+    uint32_t * timestamps;
     char currentBin;
     char currentDirection;  // 0=Forwards, 1=Backwards (TODO verify this is the case)
-    unsigned char buffSize;
-    unsigned int pulseCount;
+    uint8_t buffSize;
+    uint32_t pulseCount;
 } TimestampBufferCopy;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void setupBuffer (TimestampBuffer * myBuffer, unsigned char numberOfBins);
+void setupBuffer (TimestampBuffer * myBuffer, uint8_t numberOfBins);
 
-void setupBufferCopy (TimestampBufferCopy * myBuffer, unsigned char numberOfBins);
+void setupBufferCopy (TimestampBufferCopy * myBuffer, uint8_t numberOfBins);
 
 void copyTimestampBuffer(TimestampBuffer * originalBuffer, TimestampBufferCopy * copiedBuffer);
 
-float distanceTravelled(TimestampBufferCopy bufferCopy, unsigned int ledUpdateDelay, 
-                        float wheelDiameterMM, unsigned char pulsesPerRotation);
+int32_t distanceToPixCount(int32_t distance, int32_t ledSpacing);
+
+float distanceTravelled(TimestampBufferCopy bufferCopy, uint32_t ledUpdateDelay, 
+                        float distancePerPulse);
+                        
+int32_t distanceTravelledUnits(TimestampBufferCopy bufferCopy, uint32_t ledUpdateDelay, 
+                        int32_t distancePerPulseUnits);
+
+
 
 #ifdef __cplusplus
 } // extern "C"
