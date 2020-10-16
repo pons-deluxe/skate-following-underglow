@@ -109,8 +109,8 @@ void setup() {
 #endif
 
   // Attach interrupt
-  pinMode(pinHallSpeed, INPUT);
-  pinMode(pinHallDirection, INPUT);
+  pinMode(pinHallSpeed, INPUT_PULLUP);
+  pinMode(pinHallDirection, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(pinHallSpeed), saveMicrosToBuffer, FALLING);
 
 
@@ -146,19 +146,19 @@ void loop() {
     Serial.print("dir ");
     Serial.print(digitalRead(pinHallDirection), DEC);
     Serial.print(" speed ");
-    Serial.print(digitalRead(pinHallSpeed) + 2, DEC);
+    Serial.println(digitalRead(pinHallSpeed) + 2, DEC);
     
 
     loopCount++;
 #endif
 
-    /*
+    
     // Adjust brightness if ADC has significant change.
     int16_t newBrightness = analogRead(brightnessPin);
 #if DEBUG
     Serial.print("new ");
-    Serial.println(newBrightness, DEC);
-    Serial.print("old");
+    Serial.print(newBrightness, DEC);
+    Serial.print("old ");
     Serial.println(ledBrightness, DEC);
 #endif
     if( abs(newBrightness - ledBrightness) > brightnessHysteresis ){
@@ -168,7 +168,7 @@ void loop() {
       ledBrightness = newBrightness;
       LEDS.setBrightness(map(newBrightness, 0, 1023, 0, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
     }
-    */
+    
 
     //Calculate new colors positions 
     int32_t distance = distanceTravelledUnits(timestampBufferCopy, ledUpdateDelay, distancePerPulseUnits);
