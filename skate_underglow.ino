@@ -13,7 +13,7 @@ uint32_t is unsigned int;
 int32_t is int
 
 */
-#define DEBUG 1
+#define DEBUG 0
 #define MAX_BRIGHTNESS 200  // At 77 LEDs full white this pulls 2A, max is 2.1A
                             // Change brightness with ledBrightness below, not this define
 
@@ -38,10 +38,10 @@ const uint16_t boardTipLedNum = 26;  // The number of the LED at the tip of the 
 const bool doubleLedOnTip = true;  // 2 LEDs at front tip of board?
 
 
-const uint8_t pinHallSpeed = 15;       // Connects to pin 2 of TLE4966, will be used as interrupt
-const uint8_t pinHallDirection = 14;   // Connects to pin 3 of TLE4966
-const uint8_t brightnessPin = A6;      // Connects to middle pin of pot 1
-const uint8_t animSelectPin = A7;      // Connects to middle pin of pot 2
+const uint8_t pinHallSpeed = 11;       // Connects to pin 2 of TLE4966, will be used as interrupt
+const uint8_t pinHallDirection = 12;   // Connects to pin 3 of TLE4966
+const uint8_t brightnessPin = A0;      // Connects to middle pin of pot 1
+const uint8_t animSelectPin = A1;      // Connects to middle pin of pot 2
 const uint8_t brightnessHysteresis = 10;  // how much the ADC value needs to change before we actually call setBrightness();
 const uint8_t animSelectHysteresis = 20;  // how much the ADC value needs to change the selection value changes;
 
