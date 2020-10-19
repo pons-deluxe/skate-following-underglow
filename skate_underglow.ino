@@ -40,7 +40,7 @@ const bool doubleLedOnTip = true;  // 2 LEDs at front tip of board?
 const uint8_t pinHallSpeed = 15;       // Connects to pin 2 of TLE4966, will be used as interrupt
 const uint8_t pinHallDirection = 14;   // Connects to pin 3 of TLE4966
 const uint8_t brightnessPin = A6;      // Connects to middle pin of pot 1
-const uint8_t brightnessHysteresis = 100;  // how much the ADC value needs to change before we actually call setBrightness();
+const uint8_t brightnessHysteresis = 1;  // how much the ADC value needs to change before we actually call setBrightness();
 
 const uint8_t timestampsSaveNb = 12;  // max 255
 const uint32_t ledUpdateDelay = 10000;  // in microseconds
