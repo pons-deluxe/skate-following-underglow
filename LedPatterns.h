@@ -5,7 +5,7 @@
 #include <FastLED.h>
 
 
-void rainbowPattern(CRGB leds[], uint16_t totalLeds, int32_t leadingPos, uint32_t patternLengthLeds, 
+void rainbowPattern(CRGB leds[], uint16_t totalLeds, int32_t pixelShift, uint32_t patternLengthLeds, 
                     uint16_t boardTipLedNum, bool doubleLedOnTip);
 
 void testFrontBackPattern(CRGB leds[], uint16_t totalLeds, int32_t leadingPos, uint32_t patternLengthLeds, 

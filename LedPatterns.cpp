@@ -1,9 +1,19 @@
 #include "LedPatterns.h"
 
 
-void rainbowPattern(CRGB leds[], uint16_t totalLeds, int32_t leadingPos, 
+void rainbowPattern(CRGB leds[], uint16_t totalLeds, int32_t pixelShift, 
                     uint32_t patternLengthLeds, uint16_t boardTipLedNum, bool doubleLedOnTip){
-  //in fastLED, could be: leds[i].setHue( 160);
+  static int32_t leadingPos = 0;
+  leadingPos += pixelShift;
+
+  // Keep leadingPos in range 0-patternLengthLeds
+  if (leadingPos < 0)
+    leadingPos += patternLengthLeds;
+  // When switching from one animation to another, leadingPos could be much bigger 
+  // than the new patternLengthLeds. Modulo will bring back in range
+  if (leadingPos >= patternLengthLeds)
+    leadingPos %= patternLengthLeds;
+  
   uint16_t tipBoardLeds[2];
   tipBoardLeds[0] = boardTipLedNum;
   tipBoardLeds[1] = (doubleLedOnTip) ? boardTipLedNum + 1 : boardTipLedNum;

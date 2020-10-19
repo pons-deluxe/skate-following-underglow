@@ -26,6 +26,7 @@ int32_t is int
 #include "LedPatterns.h"
 
 
+/*--------------------------------Settings-----------------------------------*/
 
 const uint16_t numled = 76;
 const uint8_t pinToLeds = 1;   // Usable pins(Teensy LC):   1, 4, 5, 24. The chosen pin must be physically 
@@ -40,8 +41,11 @@ const bool doubleLedOnTip = true;  // 2 LEDs at front tip of board?
 const uint8_t pinHallSpeed = 15;       // Connects to pin 2 of TLE4966, will be used as interrupt
 const uint8_t pinHallDirection = 14;   // Connects to pin 3 of TLE4966
 const uint8_t brightnessPin = A6;      // Connects to middle pin of pot 1
-const uint8_t brightnessHysteresis = 1;  // how much the ADC value needs to change before we actually call setBrightness();
+const uint8_t animSelectPin = A7;      // Connects to middle pin of pot 2
+const uint8_t brightnessHysteresis = 10;  // how much the ADC value needs to change before we actually call setBrightness();
+const uint8_t animSelectHysteresis = 20;  // how much the ADC value needs to change the selection value changes;
 
+const uint8_t animationNb = 4;  // number of selectable animations
 const uint8_t timestampsSaveNb = 12;  // max 255
 const uint32_t ledUpdateDelay = 10000;  // in microseconds
 const float ledSpacingMM = 16.1;            // Space between each LED on LED strip
@@ -51,7 +55,8 @@ const uint8_t pulsesPerRotation = 6;  //how many pulses we expect the hall effec
 
 
                                             
-                                            
+/*-----------------------------Global variables------------------------------*/
+
 TimestampBuffer     timestampBuffer;  // has volatile elements, keeps the result of micros() each time we get a pulse
 TimestampBufferCopy timestampBufferCopy; // copy of timestampBuffer that is unaffected by interrupts
 elapsedMicros sinceLastFrame;
@@ -63,7 +68,9 @@ int32_t ledSpacingUnits = (int32_t)(ledSpacingMM * 10);
 //uint32_t patternLengthUnits = (uint32_t)(patternLengthMM * 10);
 uint32_t patternLengthLeds = (uint32_t)(patternLengthMM / ledSpacingMM);
 int32_t leadingPos = 0;  // Position of the leading LED in the pattern, 0 to (patternLengthLeds - 1)
-int16_t ledBrightness;  // Saved value of brightness to compare to new reading before actually changing the brightness.
+int16_t ledBrightness;  // Saved value of brightness pot ADC to compare to new reading before actually changing the brightness.
+int16_t animSelectVal;  // Saved value of animation selection pot ADC  to compare to new reading before actually changing the animation.
+uint8_t animSelect;  // The number of the selected animation
 
 //byte drawingMemory[numled*3];         //  3 bytes per LED
 //DMAMEM byte displayMemory[numled*12]; // 12 bytes per LED
@@ -77,6 +84,8 @@ CRGB leds[numled];
 int32_t loopCount = 0;
 #endif
 
+
+/*---------------------------------Interrupt---------------------------------*/
 
 /* Interrupt function, called on falling edge of speed signal from TLE4966
  *  Update the direction value. We save a timestamp in the circular buffer 
@@ -93,6 +102,8 @@ void saveMicrosToBuffer(){ //TODO if timestamps not initialized problem on times
   timestampBuffer.pulseCount++;
 }
 
+
+/*-----------------------------------Setup-----------------------------------*/
 
 void setup() {
   
@@ -118,13 +129,24 @@ void setup() {
   pinMode(pinToLeds, OUTPUT);
   pinMode(17, INPUT);
   LEDS.addLeds<WS2812SERIAL,pinToLeds,GRB>(leds,numled);
+  
   pinMode(brightnessPin, INPUT);
+  delay(250);
   ledBrightness = analogRead(brightnessPin);
-  LEDS.setBrightness(map(ledBrightness, 0, 1023, 0, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
-  //leds.begin();
-
+  uint32_t scaledBrightness = uint32_t(ledBrightness) * uint32_t(ledBrightness) >> 10; // Scale to a more parabola-ish shape
+  LEDS.setBrightness(map(scaledBrightness, 0, 1023, 1, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
+  
+  pinMode(animSelectPin, INPUT);
+  delay(250);
+  animSelectVal = analogRead(animSelectPin);
+  animSelect = animSelectVal / (1023 / animationNb);
+  if (animSelect <= animationNb){  // Safety to make sure we stay in range
+    animSelect = animationNb - 1;
+  }
 }
 
+
+/*-----------------------------------Loop------------------------------------*/
 
 void loop() {
   //Check if 1/60th of a second has passed
@@ -142,50 +164,104 @@ void loop() {
     Serial.println(timestampBuffer.timestamps[timestampBuffer.currentBin], DEC);
     */
     
-    
+    /*
     Serial.print("dir ");
     Serial.print(digitalRead(pinHallDirection), DEC);
     Serial.print(" speed ");
     Serial.println(digitalRead(pinHallSpeed) + 2, DEC);
-    
+    */
 
     loopCount++;
 #endif
 
     
-    // Adjust brightness if ADC has significant change.
+    /*----------Brightness ajustment----------*/
+    
     int16_t newBrightness = analogRead(brightnessPin);
 #if DEBUG
+    /*
     Serial.print("new ");
     Serial.print(newBrightness, DEC);
-    Serial.print("old ");
-    Serial.println(ledBrightness, DEC);
+    Serial.print(" old ");
+    Serial.print(ledBrightness, DEC);
+    Serial.print(" mapped ");
+    uint8_t scaledBrightness = map(ledBrightness, 0, 1023, 0, 255);
+    scaledBrightness = scale8(scaledBrightness,scaledBrightness);
+    Serial.println(map(scaledBrightness, 0, 255, 0, MAX_BRIGHTNESS), DEC);
+    */
 #endif
     if( abs(newBrightness - ledBrightness) > brightnessHysteresis ){
 #if DEBUG
-      Serial.println("change");
+      //Serial.println("change");
 #endif
       ledBrightness = newBrightness;
-      LEDS.setBrightness(map(newBrightness, 0, 1023, 0, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
+      //uint8_t scaledBrightness = map(newBrightness, 0, 1023, 0, 255);
+      //scaledBrightness = scale8(scaledBrightness,scaledBrightness);
+      //LEDS.setBrightness(map(scaledBrightness, 0, 255, 1, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
+      //LEDS.setBrightness(map(ledBrightness, 0, 1023, 1, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
+      uint32_t scaledBrightness = uint32_t(ledBrightness) * uint32_t(ledBrightness) >> 10; // Scale to a more parabola-ish shape
+      LEDS.setBrightness(map(scaledBrightness, 0, 1023, 1, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
     }
-    
 
-    //Calculate new colors positions 
+
+
+    /*----------Animation selection----------*/
+    
+    int16_t newAnimSelectVal = analogRead(animSelectPin);
+#if DEBUG
+    Serial.print("new ");
+    Serial.println(newAnimSelectVal, DEC);
+#endif
+    if( abs(newAnimSelectVal - animSelectVal) > animSelectHysteresis ){
+#if DEBUG
+      Serial.println("change");
+      Serial.println(newAnimSelectVal, DEC);
+#endif
+      animSelectVal = newAnimSelectVal;
+      animSelect = animSelectVal / (1023 / animationNb);
+      if (animSelect == animationNb){  // Safety to make sure we stay in range
+        animSelect = animationNb - 1;
+      }
+    }
+#if DEBUG
+    Serial.println(animSelect, DEC);
+#endif
+    
+    
+    /*----------Distance calculation----------*/
+    
     int32_t distance = distanceTravelledUnits(timestampBufferCopy, ledUpdateDelay, distancePerPulseUnits);
     int32_t pixelShift = distanceToPixCount(distance, ledSpacingUnits);
-    leadingPos += pixelShift;
-    leadingPos = (leadingPos < 0)? (leadingPos + patternLengthLeds) : leadingPos;
+    //leadingPos += pixelShift;
+    //leadingPos = (leadingPos < 0)? (leadingPos + patternLengthLeds) : leadingPos;
 #if DEBUG
     //Serial.print(" distance ");
     //Serial.println(distance, DEC);
 #endif
 
-    //Update the LEDs
-    rainbowPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
+
+    /*----------LED update----------*/
+
+    switch(animSelect) {
+      case 0:
+        testFrontBackPattern(leds, numled, pixelShift, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
+        break;
+      case 1:
+        rainbowPattern(leds, numled, pixelShift, 40, boardTipLedNum, doubleLedOnTip);
+        break;
+      case 2:
+        rainbowPattern(leds, numled, pixelShift, 62, boardTipLedNum, doubleLedOnTip);
+        break;
+      case 3:
+        rainbowPattern(leds, numled, pixelShift, 120, boardTipLedNum, doubleLedOnTip);
+        break;
+    }
+    //rainbowPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
     //testFrontBackPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
     FastLED.show();
 
     //Reset the timer for next frame
     sinceLastFrame = 0;
+    
   }
 }
