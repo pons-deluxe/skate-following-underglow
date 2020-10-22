@@ -13,7 +13,7 @@ uint32_t is unsigned int;
 int32_t is int
 
 */
-#define DEBUG 0
+#define DEBUG 1
 #define MAX_BRIGHTNESS 200  // At 77 LEDs full white this pulls 2A, max is 2.1A
                             // Change brightness with ledBrightness below, not this define
 
@@ -45,7 +45,7 @@ const uint8_t animSelectPin = A1;      // Connects to middle pin of pot 2
 const uint8_t brightnessHysteresis = 10;  // how much the ADC value needs to change before we actually call setBrightness();
 const uint8_t animSelectHysteresis = 20;  // how much the ADC value needs to change the selection value changes;
 
-const uint8_t animationNb = 4;  // number of selectable animations
+const uint8_t animationNb = 6;  // number of selectable animations
 const uint8_t timestampsSaveNb = 12;  // max 255
 const uint32_t ledUpdateDelay = 10000;  // in microseconds
 const float ledSpacingMM = 16.1;            // Space between each LED on LED strip
@@ -128,7 +128,7 @@ void setup() {
   // LEDs 
   pinMode(pinToLeds, OUTPUT);
   pinMode(17, INPUT);
-  LEDS.addLeds<WS2812SERIAL,pinToLeds,GRB>(leds,numled);
+  LEDS.addLeds<WS2812SERIAL,pinToLeds,BRG>(leds,numled);  // amazon says GRB, is it tho?
   
   pinMode(brightnessPin, INPUT);
   delay(250);
@@ -209,13 +209,17 @@ void loop() {
     
     int16_t newAnimSelectVal = analogRead(animSelectPin);
 #if DEBUG
+    /*
     Serial.print("new ");
     Serial.println(newAnimSelectVal, DEC);
+    */
 #endif
     if( abs(newAnimSelectVal - animSelectVal) > animSelectHysteresis ){
 #if DEBUG
+      /*
       Serial.println("change");
       Serial.println(newAnimSelectVal, DEC);
+      */
 #endif
       animSelectVal = newAnimSelectVal;
       animSelect = animSelectVal / (1023 / animationNb);
@@ -224,7 +228,7 @@ void loop() {
       }
     }
 #if DEBUG
-    Serial.println(animSelect, DEC);
+    //Serial.println(animSelect, DEC);
 #endif
     
     
@@ -254,6 +258,12 @@ void loop() {
         break;
       case 3:
         rainbowPattern(leds, numled, pixelShift, 120, boardTipLedNum, doubleLedOnTip);
+        break;
+      case 4:
+        rainbowPattern(leds, numled, -pixelShift, 62, boardTipLedNum, doubleLedOnTip);
+        break;
+      case 5:
+        cyberPattern(leds, numled, pixelShift, 120, boardTipLedNum, doubleLedOnTip);
         break;
     }
     //rainbowPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
