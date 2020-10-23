@@ -137,12 +137,19 @@ void setup() {
   LEDS.setBrightness(map(scaledBrightness, 0, 1023, 1, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
   
   pinMode(animSelectPin, INPUT);
-  delay(250);
+  delay(500);
   animSelectVal = analogRead(animSelectPin);
   animSelect = animSelectVal / (1023 / animationNb);
-  if (animSelect <= animationNb){  // Safety to make sure we stay in range
+  if (animSelect == animationNb){  // Safety to make sure we stay in range
     animSelect = animationNb - 1;
   }
+#if DEBUG
+  Serial.print("val ");
+  Serial.print(animSelectVal, DEC);
+  Serial.print(" animSelect ");
+  Serial.println(animSelect, DEC);
+  
+#endif
 }
 
 
@@ -216,20 +223,22 @@ void loop() {
 #endif
     if( abs(newAnimSelectVal - animSelectVal) > animSelectHysteresis ){
 #if DEBUG
-      /*
-      Serial.println("change");
-      Serial.println(newAnimSelectVal, DEC);
-      */
+      
+      Serial.print("change ");
+      Serial.print(newAnimSelectVal, DEC);
+      
 #endif
       animSelectVal = newAnimSelectVal;
       animSelect = animSelectVal / (1023 / animationNb);
       if (animSelect == animationNb){  // Safety to make sure we stay in range
         animSelect = animationNb - 1;
       }
-    }
 #if DEBUG
-    //Serial.println(animSelect, DEC);
+      Serial.print(" select ");
+      Serial.println(animSelect, DEC);
 #endif
+    }
+
     
     
     /*----------Distance calculation----------*/
@@ -254,7 +263,10 @@ void loop() {
         rainbowPattern(leds, numled, pixelShift, 40, boardTipLedNum, doubleLedOnTip);
         break;
       case 2:
-        rainbowPattern(leds, numled, pixelShift, 62, boardTipLedNum, doubleLedOnTip);
+        {
+          uint8_t hues[2] = {197, 162};
+          multiFillPattern(leds, numled, pixelShift, 100, 30, hues, 2);
+        }
         break;
       case 3:
         rainbowPattern(leds, numled, pixelShift, 120, boardTipLedNum, doubleLedOnTip);
@@ -263,7 +275,7 @@ void loop() {
         rainbowPattern(leds, numled, -pixelShift, 62, boardTipLedNum, doubleLedOnTip);
         break;
       case 5:
-        cyberPattern(leds, numled, pixelShift, 120, boardTipLedNum, doubleLedOnTip);
+        threeColorPattern(leds, numled, pixelShift, 400, boardTipLedNum, doubleLedOnTip, HUE_PURPLE, HUE_BLUE, 140);
         break;
     }
     //rainbowPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
