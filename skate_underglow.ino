@@ -260,7 +260,7 @@ void loop() {
         testFrontBackPattern(leds, numled, pixelShift, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
         break;
       case 1:
-        rainbowPattern(leds, numled, pixelShift, 40, boardTipLedNum, doubleLedOnTip);
+        rainbowPattern(leds, numled, pixelShift, 720, boardTipLedNum, doubleLedOnTip);
         break;
       case 2:
         {
@@ -269,7 +269,7 @@ void loop() {
         }
         break;
       case 3:
-        rainbowPattern(leds, numled, pixelShift, 120, boardTipLedNum, doubleLedOnTip);
+        rainbowPattern(leds, numled, pixelShift, 360, boardTipLedNum, doubleLedOnTip);
         break;
       case 4:
         rainbowPattern(leds, numled, -pixelShift, 62, boardTipLedNum, doubleLedOnTip);
