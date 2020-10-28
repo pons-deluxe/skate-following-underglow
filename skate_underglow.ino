@@ -13,7 +13,7 @@ uint32_t is unsigned int;
 int32_t is int
 
 */
-#define DEBUG 1
+#define DEBUG 0
 #define MAX_BRIGHTNESS 200  // At 77 LEDs full white this pulls 2A, max is 2.1A
                             // Change brightness with ledBrightness below, not this define
 
@@ -57,6 +57,7 @@ const uint8_t pulsesPerRotation = 6;  //how many pulses we expect the hall effec
                                             
 /*-----------------------------Global variables------------------------------*/
 
+Board board;  // Contains info like total number of LEDs and which LED is at the tip of the board.
 TimestampBuffer     timestampBuffer;  // has volatile elements, keeps the result of micros() each time we get a pulse
 TimestampBufferCopy timestampBufferCopy; // copy of timestampBuffer that is unaffected by interrupts
 elapsedMicros sinceLastFrame;
@@ -106,6 +107,9 @@ void saveMicrosToBuffer(){ //TODO if timestamps not initialized problem on times
 /*-----------------------------------Setup-----------------------------------*/
 
 void setup() {
+  
+  // Setup the board info
+  board = setupBoard(numled, boardTipLedNum, doubleLedOnTip);
   
   // Setup the timestamp buffer and its copy
   setupBuffer(&timestampBuffer,     timestampsSaveNb);
@@ -257,29 +261,28 @@ void loop() {
 
     switch(animSelect) {
       case 0:
-        testFrontBackPattern(leds, numled, pixelShift, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
+        testFrontBackPattern(leds, board);
         break;
       case 1:
-        rainbowPattern(leds, numled, pixelShift, 720, boardTipLedNum, doubleLedOnTip);
+        rainbowPattern(leds, board, pixelShift, 720);
         break;
       case 2:
         {
           uint8_t hues[2] = {197, 162};
-          multiFillPattern(leds, numled, pixelShift, 100, 30, hues, 2);
+          multiFillPattern(leds, board, pixelShift, 100, 30, hues, 2);
         }
         break;
       case 3:
-        rainbowPattern(leds, numled, pixelShift, 360, boardTipLedNum, doubleLedOnTip);
+        rainbowPattern(leds, board, pixelShift, 360);
         break;
       case 4:
-        rainbowPattern(leds, numled, -pixelShift, 62, boardTipLedNum, doubleLedOnTip);
+        rainbowPattern(leds, board, -pixelShift, 62);
         break;
       case 5:
-        threeColorPattern(leds, numled, pixelShift, 400, boardTipLedNum, doubleLedOnTip, HUE_PURPLE, HUE_BLUE, 140);
+        threeColorPattern(leds, board, pixelShift, 400, HUE_PURPLE, HUE_BLUE, 140);
         break;
     }
-    //rainbowPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
-    //testFrontBackPattern(leds, numled, leadingPos, patternLengthLeds, boardTipLedNum, doubleLedOnTip);
+    
     FastLED.show();
 
     //Reset the timer for next frame
