@@ -17,5 +17,5 @@ TODO:
 
 
 Lessons learned:
--The adhesive back on the LED strips can be pretty crap. My strips would unstick after a day or so. Hot glue on left and right of the strip on its entire length seems to work fine.
--Don't trust the LED strip manufacturer when they say the LEDs are GRB, the actual order was BRG. Testing this earlier would have avoided a lot of confusion.
+- The adhesive back on the LED strips can be pretty crap. My strips would unstick after a day or so. Hot glue on left and right of the strip on its entire length seems to work fine.
+- Don't trust the LED strip manufacturer when they say the LEDs are GRB, the actual order was BRG. Testing this earlier would have avoided a lot of confusion.
