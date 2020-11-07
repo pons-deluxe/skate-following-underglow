@@ -5,13 +5,6 @@ TODO configure unused digital pins to OUTPUT to save power
 
 FastLED.setBrightness TO 200 (of 255) MAXIMUM, ON ALL WHITE THIS USES 2A FOR 76 LEDS
 
-uint8_t is unsigned char;
-int8_t is signed char;
-uint16_t is unsigned short;
-int16_t is short;
-uint32_t is unsigned int;
-int32_t is int
-
 */
 #define DEBUG 0
 #define MAX_BRIGHTNESS 200  // At 77 LEDs full white this pulls 2A, max is 2.1A
@@ -60,7 +53,7 @@ const uint8_t pulsesPerRotation = 6;  //how many pulses we expect the hall effec
 Board board;  // Contains info like total number of LEDs and which LED is at the tip of the board.
 TimestampBuffer     timestampBuffer;  // has volatile elements, keeps the result of micros() each time we get a pulse
 TimestampBufferCopy timestampBufferCopy; // copy of timestampBuffer that is unaffected by interrupts
-elapsedMicros sinceLastFrame;
+uint32_t sinceLastFrame = 0;
 
 //float distancePerPulse = 3.1416 * wheelDiameterMM / pulsesPerRotation;
 // Work with units of 0.1 mm and keep everything int instead of float.
@@ -72,6 +65,7 @@ int32_t leadingPos = 0;  // Position of the leading LED in the pattern, 0 to (pa
 int16_t ledBrightness;  // Saved value of brightness pot ADC to compare to new reading before actually changing the brightness.
 int16_t animSelectVal;  // Saved value of animation selection pot ADC  to compare to new reading before actually changing the animation.
 uint8_t animSelect;  // The number of the selected animation
+bool animChange = 1;  // Flag set if the animation selected is different from last frame. A 1 signifies all LED values need to be calculated.
 
 //byte drawingMemory[numled*3];         //  3 bytes per LED
 //DMAMEM byte displayMemory[numled*12]; // 12 bytes per LED
@@ -132,21 +126,23 @@ void setup() {
   // LEDs 
   pinMode(pinToLeds, OUTPUT);
   pinMode(17, INPUT);
-  LEDS.addLeds<WS2812SERIAL,pinToLeds,BRG>(leds,numled);  // amazon says GRB, is it tho?
-  
+  LEDS.addLeds<WS2812SERIAL,pinToLeds,BRG>(leds,numled);  // amazon says GRB, it is not.
+
+  // First brightness selection
   pinMode(brightnessPin, INPUT);
   delay(250);
   ledBrightness = analogRead(brightnessPin);
   uint32_t scaledBrightness = uint32_t(ledBrightness) * uint32_t(ledBrightness) >> 10; // Scale to a more parabola-ish shape
   LEDS.setBrightness(map(scaledBrightness, 0, 1023, 1, MAX_BRIGHTNESS));  // Map ADC value (0-1023) to brightness value (0-MAX)
-  
+
+  // First Animation selection
   pinMode(animSelectPin, INPUT);
-  delay(500);
+  delay(250);
+  
   animSelectVal = analogRead(animSelectPin);
-  animSelect = animSelectVal / (1023 / animationNb);
-  if (animSelect == animationNb){  // Safety to make sure we stay in range
-    animSelect = animationNb - 1;
-  }
+  
+  animSelect = (animSelectVal + 1023/(2*(animationNb - 1))) / (1023 / (animationNb - 1));
+  
 #if DEBUG
   Serial.print("val ");
   Serial.print(animSelectVal, DEC);
@@ -161,12 +157,15 @@ void setup() {
 
 void loop() {
   //Check if 1/60th of a second has passed
-  if (sinceLastFrame > ledUpdateDelay){
+  int32_t currentTime = micros();
+  if (currentTime - sinceLastFrame > ledUpdateDelay){
+    sinceLastFrame = currentTime;
+    
     noInterrupts();
     copyTimestampBuffer(&timestampBuffer, &timestampBufferCopy);
     interrupts();
-#if DEBUG
     
+#if DEBUG
     /*
     Serial.print(loopCount, DEC);
     Serial.print(" dir ");
@@ -226,16 +225,16 @@ void loop() {
     */
 #endif
     if( abs(newAnimSelectVal - animSelectVal) > animSelectHysteresis ){
-#if DEBUG
-      
-      Serial.print("change ");
-      Serial.print(newAnimSelectVal, DEC);
-      
-#endif
+
       animSelectVal = newAnimSelectVal;
-      animSelect = animSelectVal / (1023 / animationNb);
-      if (animSelect == animationNb){  // Safety to make sure we stay in range
-        animSelect = animationNb - 1;
+      //uint8_t newAnimSelect = animSelectVal / (1023 / animationNb);
+      // Get animation value while giving less range to first and last value
+      newAnimSelectVal += 1023/(2*(animationNb - 1));
+      uint8_t newAnimSelect = newAnimSelectVal / (1023 / (animationNb - 1));
+      
+      if (animSelect != newAnimSelect){
+        animSelect = newAnimSelect;
+        animChange = 1;  // Set the flag to indicate animation has changed.
       }
 #if DEBUG
       Serial.print(" select ");
@@ -273,20 +272,19 @@ void loop() {
         }
         break;
       case 3:
-        rainbowPattern(leds, board, pixelShift, 360);
+        theaterLights(leds, board, animChange);
         break;
       case 4:
-        rainbowPattern(leds, board, -pixelShift, 62);
+        rainbowPattern(leds, board, pixelShift, 62);
         break;
       case 5:
         threeColorPattern(leds, board, pixelShift, 400, HUE_PURPLE, HUE_BLUE, 140);
         break;
     }
     
+    animChange = 0;  // We have calculated new pixel values, don't need to next time.
+    
     FastLED.show();
-
-    //Reset the timer for next frame
-    sinceLastFrame = 0;
     
   }
 }

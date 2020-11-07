@@ -28,8 +28,7 @@ void multiFillPattern(CRGB leds[], Board board, int32_t pixelShift,
 
 void testFrontBackPattern(CRGB leds[], Board board);
 
-void theaterLights(CRGB leds[], uint16_t totalLeds, int32_t leadingPos, uint32_t patternLengthLeds, 
-                    uint16_t boardTipLedNum, bool doubleLedOnTip);
+void theaterLights(CRGB leds[], Board board, bool animChangeFlag);
 
 
 #endif  // _LEDPATTERN_H

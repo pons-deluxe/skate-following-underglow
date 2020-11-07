@@ -95,9 +95,9 @@ void threeColorPattern(CRGB leds[], Board board, int32_t pixelShift, int32_t pat
       leds[leftIndex].setHue(map(safeLeadingPos, twoThirdsPattern, twoThirdsPattern + transitionLength, colorHue2, colorHue3));
       leds[rightIndex].setHue(map(safeLeadingPos, twoThirdsPattern, twoThirdsPattern + transitionLength, colorHue3, colorHue1));
     }
-    else{  //Smaller than patternLengthLeds
-      leds[leftIndex].setHue(HUE_AQUA);
-      leds[rightIndex].setHue(HUE_PURPLE);
+    else{  //Smaller than patternLengthLeds TODO verify this works with other than HUE_AQUA and HUE_PURPLE
+      leds[leftIndex].setHue(colorHue3);
+      leds[rightIndex].setHue(colorHue1);
     }
     
   }
@@ -182,7 +182,33 @@ void testFrontBackPattern(CRGB leds[], Board board){
 
 }
 
-void theaterLights(CRGB leds[], uint16_t totalLeds, int32_t leadingPos, uint32_t patternLengthLeds, 
-                    uint16_t boardTipLedNum, bool doubleLedOnTip){
+void theaterLights(CRGB leds[], Board board, bool animChangeFlag){
+  // Coded for 76 total LEDs only, will be uglier (or crash?) on any number that isn't a multiple of 4...
+  
+  static uint32_t lastTime = 0;
+  uint32_t currentTime = micros();
+  
+  if (currentTime - lastTime > 34000){
+    lastTime = currentTime;
+    
+    if (animChangeFlag){
+      for(uint16_t i = 0; i < board.totalLeds/4; i++){
+        leds[4 * i + 0] = CHSV(21, 255, 0);
+        leds[4 * i + 1] = CHSV(21, 255, 0);
+        leds[4 * i + 2] = CHSV(21, 255, 70);  // dimmed value
+        leds[4 * i + 3] = CHSV(21, 255, 255); // full value
+      }
+    }
+    else{
+      
+      // Just do a memmove()
+      CRGB myBuffer = leds[board.totalLeds - 1];
+      memmove(leds + 1, leds, (board.totalLeds - 1) * sizeof(leds[0]));
+      leds[0] = myBuffer;
+      
+    }
+    
+  }
+  
   
 }
